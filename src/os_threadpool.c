@@ -66,16 +66,18 @@ os_task_t *dequeue_task(os_threadpool_t *tp)
 
 	/* TODO: Dequeue task from the shared task queue. Use synchronization. */
 
+	pthread_mutex_lock(&tp->mutex);
+
 	if (!queue_is_empty(tp)) {
-		pthread_mutex_lock(&tp->mutex);
 		os_list_node_t *n = tp->head.next;
-		t = list_entry(n, os_task_t, list);
 		list_del(n);
-		pthread_mutex_unlock(&tp->mutex);
+		t = list_entry(n, os_task_t, list);
 	}
+	pthread_mutex_unlock(&tp->mutex);
 
 	return t;
 }
+
 
 /* Loop function for threads */
 static void *thread_loop_function(void *arg)
@@ -85,18 +87,19 @@ static void *thread_loop_function(void *arg)
 	while (1) {
 		os_task_t *t;
 		t = dequeue_task(tp);
-		if (t == NULL)
-			break;;
+		if (t == NULL) {
+			break;
+		}
 		t->action(t->argument);
 		destroy_task(t);
 	}
 
-	// pthread_mutex_lock(&tp->mutex);
+	pthread_mutex_lock(&tp->mutex);
 
 	tp->index++;
-	// pthread_cond_broadcast(&tp->cond);
+	pthread_cond_broadcast(&tp->cond);
 
-	// pthread_mutex_unlock(&tp->mutex);
+	pthread_mutex_unlock(&tp->mutex);
 	
 	return NULL;
 }
@@ -105,12 +108,12 @@ static void *thread_loop_function(void *arg)
 void wait_for_completion(os_threadpool_t *tp)
 {
 	/* TODO: Wait for all worker threads. Use synchronization. */
-	// pthread_mutex_lock(&tp->mutex);
+	pthread_mutex_lock(&tp->mutex);
 	while (tp->index < tp->num_threads) {
-		// pthread_cond_wait(&tp->cond, &tp->mutex);
-		continue;
+		pthread_cond_wait(&tp->cond, &tp->mutex);
+		// continue;
 	}
-	// pthread_mutex_unlock(&tp->mutex);
+	pthread_mutex_unlock(&tp->mutex);
 
 	/* Join all worker threads. */
 	for (unsigned int i = 0; i < tp->num_threads; i++) {
@@ -133,9 +136,6 @@ os_threadpool_t *create_threadpool(unsigned int num_threads)
 
 	rc = pthread_mutex_init(&tp->mutex, NULL);
 	DIE(rc != 0, "pthread_mutex_init");
-	
-	// rc = pthread_mutex_init(&tp->mutex2, NULL);
-	// DIE(rc != 0, "pthread_mutex_init");
 
 	rc = pthread_cond_init(&tp->cond, NULL);
 	DIE(rc != 0, "pthread_cond_init");
@@ -164,12 +164,13 @@ void destroy_threadpool(os_threadpool_t *tp)
 		list_del(n);
 		destroy_task(list_entry(n, os_task_t, list));
 	}
+
 	int rc;
 	rc = pthread_mutex_destroy(&tp->mutex);
 	DIE(rc != 0, "pthread_mutex_destroy");
 
-	// rc = pthread_cond_destroy(&tp->cond);
-	// DIE(rc != 0, "pthread_cond_destroy");
+	rc = pthread_cond_destroy(&tp->cond);
+	DIE(rc != 0, "pthread_cond_destroy");
 
 	free(tp->threads);
 	free(tp);
