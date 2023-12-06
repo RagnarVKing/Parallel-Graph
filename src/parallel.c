@@ -17,12 +17,38 @@ static int sum;
 static os_graph_t *graph;
 static os_threadpool_t *tp;
 /* TODO: Define graph synchronization mechanisms. */
-
+pthread_mutex_t mutex;
 /* TODO: Define graph task argument. */
+static void process_node_task(void *idx)
+{
+	os_node_t *node;
+
+	pthread_mutex_lock(&mutex);
+
+	// log_debug("index is %d\n", idx);
+
+	node = graph->nodes[(unsigned int)idx];
+	sum += node->info;
+	graph->visited[(unsigned int)idx] = DONE;
+
+	for (unsigned int i = 0; i < node->num_neighbours; i++) {
+		if (graph->visited[node->neighbours[i]] == NOT_VISITED) {
+			graph->visited[node->neighbours[i]] = DONE;
+			os_task_t *task = create_task(process_node_task, node->neighbours[i], NULL);
+			// pthread_mutex_lock(&mutex);
+			enqueue_task(tp, task);
+			// pthread_mutex_unlock(&mutex);
+		}
+	}
+
+	pthread_mutex_unlock(&mutex);
+}
 
 static void process_node(unsigned int idx)
 {
 	/* TODO: Implement thread-pool based processing of graph. */
+	os_task_t *task = create_task(process_node_task, idx, NULL);
+	enqueue_task(tp, task);
 }
 
 int main(int argc, char *argv[])
@@ -40,6 +66,9 @@ int main(int argc, char *argv[])
 	graph = create_graph_from_file(input_file);
 
 	/* TODO: Initialize graph synchronization mechanisms. */
+	int rc = pthread_mutex_init(&mutex, NULL);
+	DIE(rc != 0, "pthread_mutex_init");
+	
 	tp = create_threadpool(NUM_THREADS);
 	process_node(0);
 	wait_for_completion(tp);
