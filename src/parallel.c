@@ -25,23 +25,25 @@ static void process_node_task(void *idx)
 
 	pthread_mutex_lock(&mutex);
 
-	// log_debug("index is %d\n", idx);
-
 	node = graph->nodes[(unsigned int)idx];
 	sum += node->info;
 	graph->visited[(unsigned int)idx] = DONE;
 
+	pthread_mutex_unlock(&mutex);
+
 	for (unsigned int i = 0; i < node->num_neighbours; i++) {
+		pthread_mutex_lock(&mutex);
 		if (graph->visited[node->neighbours[i]] == NOT_VISITED) {
 			graph->visited[node->neighbours[i]] = DONE;
 			os_task_t *task = create_task(process_node_task, node->neighbours[i], NULL);
-			// pthread_mutex_lock(&mutex);
+			pthread_mutex_unlock(&mutex);
 			enqueue_task(tp, task);
-			// pthread_mutex_unlock(&mutex);
+			sem_post(&tp->semaphore);
+		} else {
+			pthread_mutex_unlock(&mutex);
 		}
 	}
 
-	pthread_mutex_unlock(&mutex);
 }
 
 static void process_node(unsigned int idx)
@@ -49,6 +51,7 @@ static void process_node(unsigned int idx)
 	/* TODO: Implement thread-pool based processing of graph. */
 	os_task_t *task = create_task(process_node_task, idx, NULL);
 	enqueue_task(tp, task);
+	sem_post(&tp->semaphore);
 }
 
 int main(int argc, char *argv[])

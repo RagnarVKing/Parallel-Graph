@@ -42,6 +42,7 @@ void enqueue_task(os_threadpool_t *tp, os_task_t *t)
 	pthread_mutex_lock(&tp->mutex);
 	list_add_tail(&tp->head, &t->list);
 	pthread_mutex_unlock(&tp->mutex);
+
 }
 
 /*
@@ -65,15 +66,19 @@ os_task_t *dequeue_task(os_threadpool_t *tp)
 	os_task_t *t = NULL;
 
 	/* TODO: Dequeue task from the shared task queue. Use synchronization. */
+	sem_wait(&tp->semaphore);
 
 	pthread_mutex_lock(&tp->mutex);
-
+	
 	if (!queue_is_empty(tp)) {
 		os_list_node_t *n = tp->head.next;
 		list_del(n);
 		t = list_entry(n, os_task_t, list);
 	}
+
 	pthread_mutex_unlock(&tp->mutex);
+
+	sem_post(&tp->semaphore);
 
 	return t;
 }
@@ -111,7 +116,6 @@ void wait_for_completion(os_threadpool_t *tp)
 	pthread_mutex_lock(&tp->mutex);
 	while (tp->index < tp->num_threads) {
 		pthread_cond_wait(&tp->cond, &tp->mutex);
-		// continue;
 	}
 	pthread_mutex_unlock(&tp->mutex);
 
@@ -139,6 +143,8 @@ os_threadpool_t *create_threadpool(unsigned int num_threads)
 
 	rc = pthread_cond_init(&tp->cond, NULL);
 	DIE(rc != 0, "pthread_cond_init");
+
+	sem_init(&tp->semaphore, 0, 0);
 
 	tp->index = 0;
 

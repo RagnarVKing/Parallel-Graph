@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include "os_list.h"
 #include <stdatomic.h>
+#include <semaphore.h>
 
 typedef struct {
 	void *argument;
@@ -29,8 +30,9 @@ typedef struct os_threadpool {
 
 	/* TODO: Define threapool / queue synchronization data. */
 	pthread_mutex_t mutex;
-	unsigned int index;
+	atomic_int index;
 	pthread_cond_t cond;
+	sem_t semaphore;
 } os_threadpool_t;
 
 os_task_t *create_task(void (*f)(void *), void *arg, void (*destroy_arg)(void *));
