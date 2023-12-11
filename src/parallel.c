@@ -5,12 +5,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <time.h>
+#include <stdint.h>
 
 #include "os_graph.h"
 #include "os_threadpool.h"
 #include "log/log.h"
 #include "utils.h"
-#include <stdint.h>
 
 #define NUM_THREADS		4
 
@@ -44,7 +44,6 @@ static void process_node_task(void *idx)
 			pthread_mutex_unlock(&mutex);
 		}
 	}
-
 }
 
 static void process_node(unsigned int idx)

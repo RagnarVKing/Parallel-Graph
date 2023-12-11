@@ -42,7 +42,6 @@ void enqueue_task(os_threadpool_t *tp, os_task_t *t)
 	pthread_mutex_lock(&tp->mutex);
 	list_add_tail(&tp->head, &t->list);
 	pthread_mutex_unlock(&tp->mutex);
-
 }
 
 /*
@@ -123,7 +122,6 @@ void wait_for_completion(os_threadpool_t *tp)
 	/* Join all worker threads. */
 	for (unsigned int i = 0; i < tp->num_threads; i++)
 		pthread_join(tp->threads[i], NULL);
-
 }
 
 /* Create a new threadpool. */

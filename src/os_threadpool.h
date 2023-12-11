@@ -4,9 +4,9 @@
 #define __OS_THREADPOOL_H__	1
 
 #include <pthread.h>
-#include "os_list.h"
 #include <stdatomic.h>
 #include <semaphore.h>
+#include "os_list.h"
 
 typedef struct {
 	void *argument;
