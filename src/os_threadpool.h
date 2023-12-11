@@ -30,7 +30,7 @@ typedef struct os_threadpool {
 
 	/* TODO: Define threapool / queue synchronization data. */
 	pthread_mutex_t mutex;
-	atomic_int index;
+	unsigned int index;
 	pthread_cond_t cond;
 	sem_t semaphore;
 } os_threadpool_t;

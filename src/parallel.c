@@ -24,7 +24,6 @@ static void process_node_task(void *idx)
 	os_node_t *node;
 
 	pthread_mutex_lock(&mutex);
-
 	node = graph->nodes[(unsigned int)idx];
 	sum += node->info;
 	graph->visited[(unsigned int)idx] = DONE;
