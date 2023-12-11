@@ -10,6 +10,7 @@
 #include "os_threadpool.h"
 #include "log/log.h"
 #include "utils.h"
+#include <stdint.h>
 
 #define NUM_THREADS		4
 
@@ -24,9 +25,9 @@ static void process_node_task(void *idx)
 	os_node_t *node;
 
 	pthread_mutex_lock(&mutex);
-	node = graph->nodes[(unsigned int)idx];
+	node = graph->nodes[(unsigned int)(uintptr_t)idx];
 	sum += node->info;
-	graph->visited[(unsigned int)idx] = DONE;
+	graph->visited[(unsigned int)(uintptr_t)idx] = DONE;
 
 	pthread_mutex_unlock(&mutex);
 
@@ -34,7 +35,8 @@ static void process_node_task(void *idx)
 		pthread_mutex_lock(&mutex);
 		if (graph->visited[node->neighbours[i]] == NOT_VISITED) {
 			graph->visited[node->neighbours[i]] = DONE;
-			os_task_t *task = create_task(process_node_task, node->neighbours[i], NULL);
+			os_task_t *task = create_task(process_node_task, (void *)(uintptr_t)node->neighbours[i], NULL);
+
 			pthread_mutex_unlock(&mutex);
 			enqueue_task(tp, task);
 			sem_post(&tp->semaphore);
@@ -48,7 +50,8 @@ static void process_node_task(void *idx)
 static void process_node(unsigned int idx)
 {
 	/* TODO: Implement thread-pool based processing of graph. */
-	os_task_t *task = create_task(process_node_task, idx, NULL);
+	os_task_t *task = create_task(process_node_task, (void *)(uintptr_t)idx, NULL);
+
 	enqueue_task(tp, task);
 	sem_post(&tp->semaphore);
 }
@@ -70,7 +73,7 @@ int main(int argc, char *argv[])
 	/* TODO: Initialize graph synchronization mechanisms. */
 	int rc = pthread_mutex_init(&mutex, NULL);
 	DIE(rc != 0, "pthread_mutex_init");
-	
+
 	tp = create_threadpool(NUM_THREADS);
 	process_node(0);
 	wait_for_completion(tp);

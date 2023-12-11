@@ -69,9 +69,10 @@ os_task_t *dequeue_task(os_threadpool_t *tp)
 	sem_wait(&tp->semaphore);
 
 	pthread_mutex_lock(&tp->mutex);
-	
+
 	if (!queue_is_empty(tp)) {
 		os_list_node_t *n = tp->head.next;
+
 		list_del(n);
 		t = list_entry(n, os_task_t, list);
 	}
@@ -91,10 +92,10 @@ static void *thread_loop_function(void *arg)
 
 	while (1) {
 		os_task_t *t;
+
 		t = dequeue_task(tp);
-		if (t == NULL) {
+		if (t == NULL)
 			break;
-		}
 		t->action(t->argument);
 		destroy_task(t);
 	}
@@ -105,7 +106,7 @@ static void *thread_loop_function(void *arg)
 	pthread_cond_broadcast(&tp->cond);
 
 	pthread_mutex_unlock(&tp->mutex);
-	
+
 	return NULL;
 }
 
@@ -114,15 +115,15 @@ void wait_for_completion(os_threadpool_t *tp)
 {
 	/* TODO: Wait for all worker threads. Use synchronization. */
 	pthread_mutex_lock(&tp->mutex);
-	while (tp->index < tp->num_threads) {
+	while (tp->index < tp->num_threads)
 		pthread_cond_wait(&tp->cond, &tp->mutex);
-	}
+
 	pthread_mutex_unlock(&tp->mutex);
 
 	/* Join all worker threads. */
-	for (unsigned int i = 0; i < tp->num_threads; i++) {
+	for (unsigned int i = 0; i < tp->num_threads; i++)
 		pthread_join(tp->threads[i], NULL);
-	}
+
 }
 
 /* Create a new threadpool. */
@@ -172,6 +173,7 @@ void destroy_threadpool(os_threadpool_t *tp)
 	}
 
 	int rc;
+	
 	rc = pthread_mutex_destroy(&tp->mutex);
 	DIE(rc != 0, "pthread_mutex_destroy");
 
