@@ -173,7 +173,7 @@ void destroy_threadpool(os_threadpool_t *tp)
 	}
 
 	int rc;
-	
+
 	rc = pthread_mutex_destroy(&tp->mutex);
 	DIE(rc != 0, "pthread_mutex_destroy");
 

@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 
 	/* TODO: Initialize graph synchronization mechanisms. */
 	int rc = pthread_mutex_init(&mutex, NULL);
+
 	DIE(rc != 0, "pthread_mutex_init");
 
 	tp = create_threadpool(NUM_THREADS);
